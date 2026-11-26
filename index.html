@@ -174,10 +174,10 @@ textarea{width:100%;resize:vertical}
 <label class='ck' style='margin-top:6px'><input type='checkbox' id='e2t'>Todoにも登録</label>
 <div id='e2o' style='display:none'>
 <div class='row'><span class='mu'>Todoの出し方</span><select id='e2p'><option value='day'>その日にやる</option><option value='before'>その日までにやる</option><option value='from'>その日から始める</option><option value='span'>期間でやる</option><option value='custom'>細かく設定する</option></select><span id='e2pnw' class='mu' style='display:none'>○=<input type='number' id='e2pn' min='0' max='365' value='3' style='width:52px'>日</span></div>
-<div id='e2pv' class='mu' style='font-size:12px;background:var(--sel);border-radius:6px;padding:4px 8px;margin:0 0 6px'></div>
+<div id='e2pv' class='mu' style='white-space:pre-line;line-height:1.45;font-size:12px;line-height:1.5;white-space:pre-line;background:var(--sel);border-radius:6px;padding:4px 8px;margin:0 0 6px'></div>
 <div id='e2adv' style='display:none'>
-<div class='row'><span class='mu'>日付の持ち方</span><select id='e2m'><option value='due'>期限だけ(上記日付が期限)</option><option value='range'>期間(開始〜期限)</option><option value='start'>開始だけ(期限は未定)</option></select><span id='e2bw' class='mu' style='display:none'>開始は上記日付の<input type='number' id='e2b' min='0' max='365' style='width:52px' placeholder='0'>日前</span></div>
-<div class='row'><span class='mu'>Todoに出す時期</span><select id='e2f'><option value='now'>今すぐ</option><option value='s0'>開始日から</option><option value='sb'>開始日の○日前から</option><option value='sa'>開始日の○日後から</option><option value='eb'>終了日の○日前から</option></select><span id='e2nw' class='mu' style='display:none'>○=<input type='number' id='e2n' min='0' max='365' style='width:52px' placeholder='0'>日</span></div>
+<div class='row'><span class='mu'>Todoに付ける日付</span><select id='e2m'><option value='due'>期限を付ける(予定の日が期限)</option><option value='range'>期間を付ける(開始日〜期限日)</option><option value='start'>開始日だけ付ける(期限なし)</option></select><span id='e2bw' class='mu' style='display:none'>開始日は、予定の日の<input type='number' id='e2b' min='0' max='365' style='width:52px' placeholder='0'>日前</span></div>
+<div class='row'><span class='mu'>Todo欄に出す日</span><select id='e2f'><option value='now'>今すぐ</option><option value='s0'>開始日から</option><option value='sb'>開始日の○日前から</option><option value='sa'>開始日の○日後から</option><option value='eb'>終了日の○日前から</option></select><span id='e2nw' class='mu' style='display:none'>○=<input type='number' id='e2n' min='0' max='365' style='width:52px' placeholder='0'>日</span></div>
 </div>
 <label class='ck'><input type='checkbox' id='e2a'>期間中は自動で太字</label>
 </div>
@@ -726,9 +726,9 @@ function updPreview(){
   else if(IR.length)e={date:IR.slice().sort()[0]};
   if(!e){v.textContent='日付を入れると、Todoがどうなるかの例がここに出ます';return}
   var fw=function(x){return fd(x)+'('+WDN[pd(x).getDay()]+')'},d=lkDates(e,mkLk());
-  var a=d.start&&d.date?'期間 '+fw(d.start)+'〜'+fw(d.date):d.date?'期限 '+fw(d.date):fw(d.start)+'から(期限は決めない)';
-  var ap=(!d.from||d.from<=today)?'すぐ':fw(d.from)+'から';
-  v.textContent='例: '+fw(e.date)+(e.end?'〜'+fw(e.end):'')+'の予定 → Todoには'+ap+'出ます / '+a
+  var show=!d.from?'今すぐ':d.from>today?fw(d.from):'今すぐ('+fw(d.from)+'はもう過ぎているため)';
+  var dt=d.start&&d.date?'期間 '+fw(d.start)+' 〜 '+fw(d.date):d.date?'期限 '+fw(d.date):fw(d.start)+' から(期限なし)';
+  v.textContent='例: 予定が '+fw(e.date)+(e.end?' 〜 '+fw(e.end):'')+' の場合\n・Todo欄に出る日: '+show+'\n・Todoに付く日付: '+dt
 }
 function e2u(){
   var kone=$('evk').value==='one',rc=rangeCtx(),p=$('e2p').value,po=$('e2p').options;
