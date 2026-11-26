@@ -159,7 +159,8 @@ textarea{width:100%;resize:vertical}
 <label>メモ(任意・長文OK)</label><textarea id='evmemo' rows='4'></textarea>
 <div class='sec'>日付</div>
 <div id='evkw'><label>種類</label><select id='evk'><option value='one'>1回のみ</option><option value='rep'>定期(毎週・毎月など)</option><option value='irr'>不定期(日付を複数指定)</option></select></div>
-<div id='k-one'><label>日付</label><input type='date' id='evd'></div>
+<div id='k-one'><label>日付</label><div class='row'><input type='date' id='evd'><span class='mu'>〜</span><input type='date' id='eve'><span class='mu' style='font-size:12px'>終了日は、期間があるときだけ</span></div>
+<div id='e2cw' class='row' style='display:none'><span class='mu'>カレンダーに出す日</span><select id='e2c'><option value='all'>期間中は毎日</option><option value='first'>開始日だけ</option><option value='last'>終了日だけ</option></select></div></div>
 <div id='k-rep' style='display:none'><label>繰り返し</label><select id='rt'><option value='w'>毎週</option><option value='m'>毎月(日付)</option><option value='n'>毎月(第N曜日)</option></select>
 <div id='rw' class='wd' style='margin-top:6px'></div>
 <div id='rm' style='display:none;margin-top:6px'><div class='mu' style='margin-bottom:4px'>毎月の日にちを選択(複数OK・もう一度押すと解除)</div><div id='mdg' class='dgrid'></div><div class='mu' style='margin-top:4px;font-size:12px'>月末を超える日は、その月の月末日になります</div></div>
@@ -171,12 +172,10 @@ textarea{width:100%;resize:vertical}
 <div id='hl' style='display:none'><label>休日(土日・祝日・会社の休み)に当たる場合</label><select id='hadj'><option value='keep'>そのまま</option><option value='next'>次営業日にずらす</option><option value='prev'>前営業日にずらす</option></select></div>
 <div class='sec'>Todoとの連動</div>
 <label class='ck' style='margin-top:6px'><input type='checkbox' id='e2t'>Todoにも登録</label>
-<div id='e2o' class='row' style='display:none'>
-<select id='e2m'><option value='due'>上記日付が期限</option><option value='start'>上記日付から開始(期限未定)</option><option value='range'>期間を指定</option></select>
-<select id='e2w' title='Todoに入るタイミング'><option value='lazy'>その日(開始日)が来たらTodoに入れる</option><option value='now'>今すぐ全部Todoに入れる</option></select>
+<div id='e2o' style='display:none'>
+<div class='row'><span class='mu'>日付の持ち方</span><select id='e2m'><option value='due'>期限だけ(上記日付が期限)</option><option value='range'>期間(開始〜期限)</option><option value='start'>開始だけ(期限は未定)</option></select><span id='e2bw' class='mu' style='display:none'>開始は上記日付の<input type='number' id='e2b' min='0' max='365' style='width:52px' placeholder='0'>日前</span></div>
+<div class='row'><span class='mu'>Todoに出す時期</span><select id='e2f'><option value='now'>今すぐ</option><option value='s0'>開始日から</option><option value='sb'>開始日の○日前から</option><option value='sa'>開始日の○日後から</option><option value='eb'>終了日の○日前から</option></select><span id='e2nw' class='mu' style='display:none'>○=<input type='number' id='e2n' min='0' max='365' style='width:52px' placeholder='0'>日</span></div>
 <label class='ck'><input type='checkbox' id='e2a'>期間中は自動で太字</label>
-<span id='e2bw' class='mu'>開始: 上記日付の<input type='number' id='e2b' min='0' max='365' style='width:52px' placeholder='0'>日前から(空欄=なし)</span>
-<span id='e2rw' class='mu' style='display:none'>開始<input type='date' id='e2s' style='width:122px;font-size:12px'> 期限<input type='date' id='e2d' style='width:122px;font-size:12px'></span>
 </div>
 <div class='mf'><div id='evw' style='color:var(--red);font-size:13px'></div>
 <div class='row' style='justify-content:space-between;margin:4px 0 0'><span id='evdw' style='display:none'><button id='evdel'>削除</button> <button id='evcut' style='display:none' title='この日以降の同じ繰り返しを削除して、繰り返しを終わらせます'>この日以降も削除</button></span><button class='p' id='evad' style='margin-left:auto'>登録</button></div></div>
@@ -213,9 +212,6 @@ textarea{width:100%;resize:vertical}
 <select id='sdir'><option value='h'>横に並べる(左→右)</option><option value='v'>縦に並べる(上→下)</option></select>
 <label>表示順</label>
 <div id='sord'></div>
-<h2 style='margin-top:14px'>Todo</h2>
-<div class='row'><button id='tidy'>繰り返し予定の先のTodoを整理</button></div>
-<div class='mu' id='tidym' style='font-size:12px'>繰り返し予定から入っているTodoのうち、まだ先の日付のものを一度外し、その日(開始日)が来たら自動で入る形に戻します。</div>
 <h2 style='margin-top:14px'>休みの扱い</h2>
 <label class='ck'><input type='checkbox' id='swk'>土日を休みとして扱う</label>
 <label class='ck'><input type='checkbox' id='shl'>祝日(日本)を休みとして扱う</label>
@@ -280,7 +276,8 @@ function cal(){
   var st=new Date(view);st.setDate(1-view.getDay());
   var cnt={},ev={};
   S.todos.forEach(function(t){var bk=t.date||t.start;if(!t.done&&bk)cnt[bk]=(cnt[bk]||0)+1});
-  S.events.forEach(function(e){(ev[e.date]=ev[e.date]||[]).push(e)});
+  var gs=k(st),ge=addDays(gs,41);
+  S.events.forEach(function(e){var last=(e.end&&e.end>e.date)?e.end:e.date;if(last<gs||e.date>ge)return;var d0=e.date<gs?gs:e.date,d1=last>ge?ge:last;for(var x=d0;x<=d1;x=addDays(x,1)){(ev[x]=ev[x]||[]).push(e)}});
   for(var q in ev)ev[q].sort(function(x,y){return (x.time||'')<(y.time||'')?-1:1});
   for(var i=0;i<42;i++){
     var d=new Date(st);d.setDate(st.getDate()+i);var key=k(d);
@@ -290,7 +287,7 @@ function cal(){
     if(cnt[key]){var sm=el("small",null,"☐"+cnt[key]);sm.title="この日が期限(期限なしは開始日)の未完了Todo: "+cnt[key]+"件";hd.appendChild(sm)}
     b.appendChild(hd);
     var ls=[],hl=hn(key)||cls(key);if(hl)ls.push(['ch',hl]);
-    (ev[key]||[]).forEach(function(e){ls.push(['ce',(e.time?e.time+' ':'')+e.text,e])});
+    (ev[key]||[]).forEach(function(e){ls.push(['ce',(key===e.date?(e.time?e.time+' ':''):'↳ ')+e.text,e])});
     var mx=maxChips();if(ls.length>mx){var rest=ls.length-(mx-1);ls=ls.slice(0,mx-1);ls.push(['cm','+'+rest+'件'])}
     ls.forEach(function(x){var s=el('span',x[0],x[1]);if(x[2]){s.title=x[2].memo||x[1];if(x[2].col){s.style.background=COLS[x[2].col][0];s.style.color=COLS[x[2].col][1]}evDrag(s,x[2])}b.appendChild(s)});
     b.onclick=(function(kk){return function(){dayClick(kk)}})(key);
@@ -304,7 +301,7 @@ function evDrag(chip,e){
   chip.onpointerdown=function(ev){
     if(ev.button>0)return;
     ev.stopPropagation();ev.preventDefault();
-    var x0=ev.clientX,y0=ev.clientY,moved=false,gh=null,hot=null,nav=0;
+    var x0=ev.clientX,y0=ev.clientY,moved=false,gh=null,hot=null,nav=0,gk=(chip.parentNode&&chip.parentNode.dataset&&chip.parentNode.dataset.k)||e.date;
     function mv(p){
       if(!moved){
         if(Math.abs(p.clientX-x0)+Math.abs(p.clientY-y0)<6)return;
@@ -323,8 +320,9 @@ function evDrag(chip,e){
       if(!moved){showEv(e);return}
       lastDrag=Date.now();
       var key=hot&&hot.dataset.k;
-      if(key&&key!==e.date){
-        e.date=key;S.todos.forEach(function(t){if(t.eventId===e.id)setTdDate(t,key)});
+      if(key&&key!==gk){
+        var dl=daysBetween(gk,key);e.date=addDays(e.date,dl);if(e.end)e.end=addDays(e.end,dl);
+        if(e.lk)syncTodo(e,false);else S.todos.forEach(function(t){if(t.eventId===e.id)setTdDate(t,e.date)});
         sel=key;save();render()
       }else cal()
     }
@@ -340,7 +338,8 @@ function isFocus(t){return !t.done&&(!!t.today||autoOn(t))}
 function todos(){
   var l=$("tl");l.innerHTML="";
   document.querySelectorAll(".tabs button").forEach(function(b){b.classList.toggle("on",b.dataset.f===S.filter)});
-  var a=S.todos.filter(function(t){return S.filter==="open"?!t.done:true});
+  var vis=function(t){return !t.from||t.from<=today},hid=S.todos.filter(function(t){return !vis(t)&&!t.done}).length;
+  var a=S.todos.filter(function(t){return vis(t)&&(S.filter==="open"?!t.done:true)});
   a=a.filter(function(t){return !t.done}).concat(a.filter(function(t){return t.done}));
   if(!a.length){var e=el("div","mu","該当するTodoはありません");e.style.padding="6px 2px";l.appendChild(e)}
   a.forEach(function(t,i){
@@ -351,14 +350,15 @@ function todos(){
     c.onchange=function(){t.done=c.checked;save();render()};cb.appendChild(c);
     var b=el("div","b");b.title="クリックで編集";b.onclick=function(){editTd(t)};
     b.appendChild(el("div","x",(t.eventId?"📅 ":"")+(t.time?t.time+" ":"")+t.text));
-    var ds=t.start&&t.date?fd(t.start)+" 〜 "+fd(t.date):t.start?fd(t.start)+" 〜":t.date?"期限 "+fd(t.date):"";
+    var fdd=function(x){return fd(x)+"("+WDN[pd(x).getDay()]+")"},ds=t.start&&t.date?"期間: "+fdd(t.start)+"〜"+fdd(t.date):t.date?"期限: "+fdd(t.date):"";
     if(ds){var late=!t.done&&t.date&&t.date<today;b.appendChild(el("div","d"+(late?" late":""),ds+(late?"(期限切れ)":"")))}
     if(t.memo){b.appendChild(el("div","m",t.memo.length>100?t.memo.slice(0,100)+"…":t.memo))}
     var del=el("button","del","✕");del.onclick=function(){ask('「'+t.text+'」を削除しますか?',function(){S.todos=S.todos.filter(function(z){return z!==t});save();render()})};
     var on=!!t.today,st=el("button","st"+(on?" on":""),on?"★":"☆");st.title=on?"「今日やる」を解除":"今日やることにする(目立たせる)";
     st.onclick=function(){t.today=on?"":"1";save();todos()};
     r.appendChild(gh);r.appendChild(cb);r.appendChild(b);r.appendChild(st);r.appendChild(del);l.appendChild(r)
-  })
+  });
+  if(hid){var ft=el("div","mu","まだ表示時期になっていないTodo: "+hid+"件(その日が来ると出ます)");ft.style.padding="6px 2px";l.appendChild(ft)}
 }
 /* Todoのドラッグ並べ替え(挿入位置に太線) */
 function tdDrag(ev,arr,from,row,list){
@@ -392,7 +392,7 @@ function tdDrag(ev,arr,from,row,list){
 }
 
 /* ---------- 選択日の予定一覧 ---------- */
-function evs(){var l=$("evl");l.innerHTML="";S.events.filter(function(e){return e.date===sel}).sort(function(a,b){return (a.time||"")<(b.time||"")?-1:1}).forEach(function(e){
+function evs(){var l=$("evl");l.innerHTML="";S.events.filter(function(e){return e.date<=sel&&sel<=(e.end||e.date)}).sort(function(a,b){return (a.time||"")<(b.time||"")?-1:1}).forEach(function(e){
   var r=el("div","ev");r.style.cursor="pointer";r.title="クリックで詳細を表示";r.style.borderLeft="4px solid "+COLS[e.col||0][0];r.style.paddingLeft="4px";r.onclick=function(){showEv(e)};
   var s=el("span",null,"📅 "+(e.time?e.time+" ":"")+e.text);
   var d=el("button","del","✕");d.onclick=function(ev){ev.stopPropagation();ask('予定「'+e.text+'」を削除しますか?'+(S.todos.some(function(z){return z.eventId===e.id})?'(連動したTodoも削除されます)':''),function(){S.events=S.events.filter(function(z){return z!==e});S.todos=S.todos.filter(function(z){return z.eventId!==e.id});save();render()})};
@@ -436,38 +436,43 @@ function ruleDates(r,from,to){
 }
 function formRule(){var wd=[];document.querySelectorAll('#rw input:checked').forEach(function(c){wd.push(Number(c.value))});return {t:$('rt').value,wd:wd,md:MD.slice(),nn:Number($('rnn').value),nd:Number($('rnd').value)}}
 function prevDay(x){var d=pd(x);d.setDate(d.getDate()-1);return k(d)}
+function addDays(x,n){var d=pd(x);d.setDate(d.getDate()+n);return k(d)}
+function daysBetween(a,b){return Math.round((pd(b)-pd(a))/86400000)}
 function horizon(){var a=new Date();a.setDate(a.getDate()+366);var b=new Date(view.getFullYear(),view.getMonth()+2,0);return k(a>b?a:b)}
+/* ---- 予定とTodoの連動 ----
+   e.lk = {m:日付の持ち方(due=期限だけ/range=期間/start=開始だけ), L:期間の日数, c:予定の置き場所(all/first/last),
+           f:Todoに出す時期(now/s0/sb/sa/eb), n:日数, a:期間中は自動で太字} */
+function lkDates(e,lk){
+  var L=lk.L||0,sD,eD,st,du,base,fr='';
+  if(lk.c==='all'){sD=e.date;eD=e.end||e.date}
+  else if(lk.c==='first'){sD=e.date;eD=addDays(e.date,L)}
+  else{eD=e.date;sD=addDays(e.date,-L)}
+  if(lk.m==='due'){st='';du=eD}else if(lk.m==='start'){st=sD;du=''}else{st=sD;du=eD}
+  base=lk.m==='due'?eD:sD;
+  if(lk.f==='s0')fr=base;else if(lk.f==='sb')fr=addDays(base,-(lk.n||0));else if(lk.f==='sa')fr=addDays(base,lk.n||0);else if(lk.f==='eb')fr=addDays(eD,-(lk.n||0));
+  return {start:st,date:du,from:fr}
+}
+function syncTodo(e,create){
+  if(!e.lk)return;
+  var t=S.todos.filter(function(z){return z.eventId===e.id})[0],d=lkDates(e,e.lk);
+  if(t){t.start=d.start;t.date=d.date;t.from=d.from;t.auto=!!e.lk.a;t.text=e.text;t.time=e.time;t.memo=e.memo}
+  else if(create)S.todos.push({id:id(),text:e.text,start:d.start,date:d.date,from:d.from,time:e.time,done:false,eventId:e.id,memo:e.memo,auto:!!e.lk.a})
+}
+function unlinkTodo(e){delete e.lk;S.todos=S.todos.filter(function(z){return z.eventId!==e.id})}
 function mkEv(x,r){
-  var eid=id(),ev={id:eid,text:r.text,date:x,time:r.time,sid:r.sid,memo:r.memo,col:r.col||0};S.events.push(ev);
-  if(r.todo&&r.todo.on){var dd=tdDates(x,r.todo);
-    if(r.lazy){if((dd.date||dd.start)>=today)ev.tc={m:r.todo.m,b:r.todo.b,a:r.todo.a}}
-    else S.todos.push({id:id(),text:r.text,start:dd.start,date:dd.date,time:r.time,done:false,eventId:eid,memo:r.memo,auto:!!r.todo.a})}
+  var ev={id:id(),text:r.text,date:x,time:r.time,sid:r.sid,memo:r.memo,col:r.col||0};
+  if(r.lk)ev.lk=Object.assign({},r.lk);
+  S.events.push(ev);if(ev.lk)syncTodo(ev,true)
 }
-/* 予約(tc)のあるTodoは、開始日(なければ期限日)になったら自動でTodoに入る。消したTodoは入り直さない */
-function spawnTodos(){
+/* 古い版のデータを新しい形に直す(予約中のTodo・繰り返しのTodo設定) */
+function migrateLk(){
   var ch=false;
-  S.events.forEach(function(e){
-    if(!e.tc)return;
-    var dd=tdDates(e.date,e.tc);
-    if((dd.start||dd.date)>today)return;
-    S.todos.push({id:id(),text:e.text,start:dd.start,date:dd.date,time:e.time,done:false,eventId:e.id,memo:e.memo,auto:!!e.tc.a});
-    delete e.tc;ch=true
-  });
+  function conv(m,b,a,f){m=m==='range'?'due':m;return {m:(m==='due'&&b>0)?'range':m,L:m==='start'?0:b,c:m==='start'?'first':'last',f:f,n:0,a:!!a}}
+  S.series.forEach(function(r){if(r.todo!==undefined||r.lazy!==undefined){
+    if(r.todo&&r.todo.on)r.lk=conv(r.todo.m,r.todo.b||0,r.todo.a,r.lazy?'s0':'now');
+    delete r.todo;delete r.lazy;ch=true}});
+  S.events.forEach(function(e){if(e.tc){e.lk=conv(e.tc.m,e.tc.b||0,e.tc.a,'s0');delete e.tc;syncTodo(e,true);ch=true}});
   if(ch)save()
-}
-/* すでに入っている繰り返し予定の先のTodoを、予約の形に戻す */
-function tidyTodos(){
-  var n=0;
-  S.events.forEach(function(e){
-    if(!e.sid||e.tc)return;
-    var t=S.todos.filter(function(z){return z.eventId===e.id})[0];
-    if(!t||t.done)return;
-    var st=t.start||t.date;if(!st||st<=today)return;
-    var b=(t.start&&t.date)?Math.round((pd(t.date)-pd(t.start))/86400000):0;
-    e.tc={m:(t.start&&!t.date)?'start':'due',b:b,a:!!t.auto};
-    S.todos=S.todos.filter(function(z){return z!==t});n++
-  });
-  save();render();return n
 }
 /* 終了日なしの繰り返し: 表示している月(と今後1年)の分まで自動で予定を作り足す */
 function extSeries(limit){
@@ -478,14 +483,14 @@ function extSeries(limit){
     ruleDates(r.rule,k(from),limit).forEach(function(x){var y=adj(x,r.adj);if(seen[y])return;seen[y]=1;mkEv(y,r)});
     r.upto=limit;ch=true
   });
-  if(ch){spawnTodos();save()}
+  if(ch)save()
 }
 function openSeries(v){
   var rl=formRule();
   if((rl.t==='w'&&!rl.wd.length)||(rl.t==='m'&&!rl.md.length)){$('evw').textContent=warn();return}
   var sid=id(),st=$('rp1').value,lim=horizon();
   S.rules[sid]={k:'rep',rule:rl,rp1:st,rp2:'',adj:$('hadj').value};
-  S.series.push({id:sid,sid:sid,col:EC,text:v,time:$('evtm').value,memo:$('evmemo').value,adj:$('hadj').value,rule:rl,upto:prevDay(st),todo:{on:$('e2t').checked,m:$('e2m').value,b:Number($('e2b').value)||0,a:$('e2a').checked},lazy:$('e2w').value==='lazy'});
+  S.series.push({id:sid,sid:sid,col:EC,text:v,time:$('evtm').value,memo:$('evmemo').value,adj:$('hadj').value,rule:rl,upto:prevDay(st),lk:$('e2t').checked?mkLk():null});
   if(st>lim){var q=pd(st);q.setDate(q.getDate()+366);lim=k(q)}
   extSeries(lim);
   var ds=S.events.filter(function(z){return z.sid===sid}).map(function(z){return z.date}).sort();
@@ -534,9 +539,9 @@ function recDesc(e){
 }
 function todoDesc(e){
   var t=S.todos.filter(function(z){return z.eventId===e.id})[0];
-  if(t){var s=t.start&&t.date?fd(t.start)+' 〜 '+fd(t.date):t.start?fd(t.start)+' 〜':'期限 '+fd(t.date);return 'あり('+s+(t.auto?'・期間中は自動で太字':'')+(t.done?'・完了':'')+')'}
-  if(e.tc)return '予約中(その日が来たらTodoに入ります)';
-  return 'なし'
+  if(!t)return 'なし';
+  var s=t.start&&t.date?'期間 '+fd(t.start)+' 〜 '+fd(t.date):t.date?'期限 '+fd(t.date):'開始 '+fd(t.start)+' から(期限は未定)';
+  return 'あり('+s+(t.from&&t.from>today?'・'+fd(t.from)+'から表示':'')+(t.auto?'・期間中は自動で太字':'')+(t.done?'・完了':'')+')'
 }
 /* 予定をクリック: 詳細を一覧表示(右上に編集ボタン) */
 function showEv(e){
@@ -545,7 +550,7 @@ function showEv(e){
   ttl.style.cssText='font-size:15px;font-weight:700;margin:2px 0 10px;padding-left:8px;border-left:5px solid '+cc[0]+';word-break:break-word';b.appendChild(ttl);
   var dl=el('div','dl');
   function row(k,v){dl.appendChild(el('div','dk',k));var d=el('div','dv');if(typeof v==='string')d.textContent=v;else d.appendChild(v);dl.appendChild(d)}
-  row('日付',fdw(e.date)+(hn(e.date)?' '+hn(e.date):''));
+  row('日付',fdw(e.date)+(e.end?' 〜 '+fdw(e.end):'')+(!e.end&&hn(e.date)?' '+hn(e.date):''));
   row('時刻',e.time||'なし');
   var cv=el('span'),dot=el('span');dot.style.cssText='display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:'+cc[0];cv.appendChild(dot);cv.appendChild(document.createTextNode(cc[2]));row('色',cv);
   row('繰り返し',recDesc(e));
@@ -565,46 +570,57 @@ function fillRule(ds,sp){
   IR=(sp&&sp.irr)?sp.irr.slice():[];irl();mview=pd(IR[0]||ds);mview.setDate(1);mcal();shr()
 }
 /* 予定の編集: 追加画面と同じ項目で編集する */
+function legacyLk(e,t){   // 設定を持たない古いTodoから、連動の設定を推定する
+  var m=(t.start&&!t.date)?'start':(t.start&&t.date)?'range':'due',L=m==='range'?daysBetween(t.start,t.date):0,c='last';
+  if(t.date===e.date)c='last';else if(t.start===e.date)c='first';
+  if(m==='start')c='first';
+  return {m:m,L:L,c:c,f:'now',n:0,a:!!t.auto}
+}
 function openEdit(e){
   EM=e;tdTouched=false;ESC='this';
   $('evh').textContent='予定を編集';$('evad').textContent='保存';
-  $('evin').value=e.text;$('evtm').value=e.time||'';$('evmemo').value=e.memo||'';$('evd').value=e.date;
+  var t=S.todos.filter(function(z){return z.eventId===e.id})[0],lk=t?(e.lk||legacyLk(e,t)):null;
+  $('evin').value=e.text;$('evtm').value=e.time||'';$('evmemo').value=e.memo||'';
+  var sD=e.date,eD=e.end||'',cc='last';
+  if(e.end)cc='all';
+  else if(lk&&lk.L>0&&lk.m!=='start'&&lk.c!=='all'){cc=lk.c;if(cc==='first')eD=addDays(e.date,lk.L);else{sD=addDays(e.date,-lk.L);eD=e.date}}
+  $('evd').value=sD;$('eve').value=eD;$('e2c').value=(cc==='last'&&!eD)?'all':cc;
   setEC(e.col||0);
   $('escw').style.display=e.sid?'':'none';document.querySelector('input[name=esc][value=this]').checked=true;
   var sp=e.sid?seriesSpec(e):null;EK=sp?sp.k:'one';fillRule(e.date,sp);
   if(!e.sid){IR=[e.date];irl();mcal()}
   $('evk').value='one';
   $('evdw').style.display='';$('evcut').style.display=e.sid?'':'none';
-  var t=S.todos.filter(function(z){return z.eventId===e.id})[0],on=!!(t||e.tc),m='due',b=0,a=false,rs='',rd='';
-  if(t){a=!!t.auto;
-    if(!t.date&&t.start===e.date)m='start';
-    else if(t.date===e.date){m='due';b=t.start?Math.round((pd(t.date)-pd(t.start))/86400000):0}
-    else{m='range';rs=t.start||'';rd=t.date||''}
-  }else if(e.tc){m=e.tc.m;b=e.tc.b||0;a=!!e.tc.a}
-  $('e2t').checked=on;$('e2m').value=m;$('e2b').value=b||'';$('e2s').value=rs;$('e2d').value=rd;$('e2a').checked=a;$('e2w').value='lazy';
+  $('e2t').checked=!!lk;
+  $('e2m').value=lk?lk.m:'due';$('e2b').value=(lk&&lk.m==='range'&&lk.L)?lk.L:'';
+  $('e2f').value=lk?lk.f:(e.sid?'s0':'now');$('e2n').value=(lk&&lk.n)?lk.n:'';$('e2a').checked=!!(lk&&lk.a);
   $('evw').textContent='';shk();$('evm').classList.add('on')
 }
-function applyTodoLink(z,all,lazy){
-  var t=S.todos.filter(function(x){return x.eventId===z.id})[0];
-  if(!$('e2t').checked){S.todos=S.todos.filter(function(x){return x.eventId!==z.id});delete z.tc;return}
-  var c={m:$('e2m').value,b:Number($('e2b').value)||0,a:$('e2a').checked};
-  if(c.m==='range'&&all)c.m='due';
-  var dd=tdDates(z.date,c);
-  if(t){t.start=dd.start;t.date=dd.date;t.auto=c.a;t.text=z.text;t.time=z.time;t.memo=z.memo;delete z.tc}
-  else if(z.tc){z.tc=c}
-  else if(lazy){if((dd.date||dd.start)>=today)z.tc=c}
-  else S.todos.push({id:id(),text:z.text,start:dd.start,date:dd.date,time:z.time,done:false,eventId:z.id,memo:z.memo,auto:c.a})
+/* フォームの内容から、予定が置かれる日(date/end)を決める */
+function evSpan(){
+  var s=$('evd').value,en=$('eve').value,c=$('e2c').value;
+  if(!s||!en||en<=s)return {date:s,end:''};
+  return c==='all'?{date:s,end:en}:c==='first'?{date:s,end:''}:{date:en,end:''}
+}
+/* フォームの内容から、Todo連動の設定を作る */
+function mkLk(){
+  var m=$('e2m').value,kone=$('evk').value==='one',s=kone?$('evd').value:'',en=kone?$('eve').value:'',L=0,c='last';
+  if(s&&en&&en>s){L=daysBetween(s,en);c=$('e2c').value}
+  else if(m==='range'){L=Number($('e2b').value)||0;c='last'}
+  else if(m==='start'){c='first'}
+  return {m:m,L:L,c:c,f:$('e2f').value,n:Number($('e2n').value)||0,a:$('e2a').checked}
 }
 function saveEv(){
   var e=EM,v=$('evin').value.trim(),kind=$('evk').value;
   if(!v){$('evw').textContent='タイトルを入力してください';return}
   if((e.sid&&ESC==='all')||(!e.sid&&kind!=='one')){saveAll(e,v,kind);return}
-  var d=$('evd').value,tm=$('evtm').value,mm=$('evmemo').value;
-  if(!d){$('evw').textContent='日付を入力してください';return}
-  var old=e.date;e.text=v;e.time=tm;e.memo=mm;e.col=EC;e.date=d;
-  if(tdTouched)applyTodoLink(e,false,false);
-  else S.todos.forEach(function(t){if(t.eventId===e.id){t.text=v;t.time=tm;t.memo=mm;if(old!==d)setTdDate(t,d)}});
-  $('evm').classList.remove('on');EM=null;sel=d;view=pd(d);view.setDate(1);save();render()
+  var sp=evSpan();if(!sp.date){$('evw').textContent='日付を入力してください';return}
+  var tm=$('evtm').value,mm=$('evmemo').value,old=e.date,t=S.todos.filter(function(z){return z.eventId===e.id})[0];
+  e.text=v;e.time=tm;e.memo=mm;e.col=EC;e.date=sp.date;if(sp.end)e.end=sp.end;else delete e.end;
+  if(!e.lk&&t&&!tdTouched){t.text=v;t.time=tm;t.memo=mm;if(old!==e.date)setTdDate(t,e.date)}
+  else if($('e2t').checked){e.lk=mkLk();syncTodo(e,true)}
+  else unlinkTodo(e);
+  $('evm').classList.remove('on');EM=null;sel=e.date;view=pd(e.date);view.setDate(1);save();render()
 }
 /* 繰り返し(定期・不定期)の条件を含めて編集。日付が同じ予定はそのまま残し、条件から外れた予定を削除、新しい日付を追加する */
 function saveAll(e,v,kind){
@@ -625,55 +641,49 @@ function saveAll(e,v,kind){
     e.sid=sid;
     var rmids=rm.map(function(z){return z.id});
     S.events=S.events.filter(function(z){return rmids.indexOf(z.id)<0});S.todos=S.todos.filter(function(t){return rmids.indexOf(t.eventId)<0});
-    var lazy=$('e2w').value==='lazy';
+    var lk=$('e2t').checked?mkLk():null;
     S.events.filter(function(z){return z.sid===sid}).forEach(function(z){
       z.text=v;z.time=tm;z.memo=mm;z.col=EC;
-      if(tdTouched)applyTodoLink(z,true,lazy);
-      else S.todos.forEach(function(t){if(t.eventId===z.id){t.text=v;t.time=tm;t.memo=mm}})
+      if(tdTouched||!was){if(lk){z.lk=Object.assign({},lk);delete z.end;syncTodo(z,true)}else unlinkTodo(z)}
+      else{S.todos.forEach(function(t){if(t.eventId===z.id){t.text=v;t.time=tm;t.memo=mm}});if(z.lk)syncTodo(z,false)}
     });
-    ad.forEach(function(x){var ev={id:id(),text:v,date:x,time:tm,sid:sid,memo:mm,col:EC};S.events.push(ev);if($('e2t').checked)applyTodoLink(ev,true,lazy)});
+    ad.forEach(function(x){var ev={id:id(),text:v,date:x,time:tm,sid:sid,memo:mm,col:EC};if(lk)ev.lk=Object.assign({},lk);S.events.push(ev);if(lk)syncTodo(ev,true)});
     S.rules[sid]={k:kind,rule:rl,rp1:rp1,rp2:rp2,adj:adjm};
     var old=S.series.filter(function(z){return z.sid===sid})[0];
     S.series=S.series.filter(function(z){return z.sid!==sid});
-    if(kind==='rep'&&!rp2){
-      var nw=tdTouched||!old;
-      S.series.push({id:sid,sid:sid,col:EC,text:v,time:tm,memo:mm,adj:adjm,rule:rl,upto:lim,
-        todo:nw?{on:$('e2t').checked,m:$('e2m').value==='range'?'due':$('e2m').value,b:Number($('e2b').value)||0,a:$('e2a').checked}:old.todo,
-        lazy:nw?lazy:old.lazy})
-    }
+    if(kind==='rep'&&!rp2)S.series.push({id:sid,sid:sid,col:EC,text:v,time:tm,memo:mm,adj:adjm,rule:rl,upto:lim,lk:(tdTouched||!old)?lk:old.lk});
     var keep=exd[e.date]&&nd.indexOf(e.date)>=0?e.date:nd[0];
     $('evm').classList.remove('on');EM=null;sel=keep;view=pd(keep);view.setDate(1);save();render()
   }
   if(rm.length)ask('繰り返し条件の変更で、'+rm.length+'件の予定が削除され、'+ad.length+'件が追加されます(削除される予定に連動したTodoも消えます)。よろしいですか?',go);else go()
 }
-function tdDates(x,c){
-  var m=c?c.m:$('e2m').value;
-  if(m==='start')return {start:x,date:''};
-  if(m==='range'){var a=$('e2s').value,b=$('e2d').value;if(!a&&!b)return {start:'',date:x};if(a&&b&&a>b){var z=a;a=b;b=z}return {start:a,date:b}}
-  var n=Number(c?c.b:$('e2b').value)||0,st='';
-  if(n>0){var d=pd(x);d.setDate(d.getDate()-n);st=k(d)}
-  return {start:st,date:x}
-}
 function e2u(){
-  var one=$('evk').value==='one';
-  $('e2w').style.display=one?'none':'';
-  $('e2m').querySelector('option[value=range]').disabled=!one;
-  if(!one&&$('e2m').value==='range')$('e2m').value='due';
+  var kone=$('evk').value==='one',m=$('e2m').value,en=kone&&$('eve').value&&$('eve').value>$('evd').value;
+  $('e2cw').style.display=en?'':'none';
   $('e2o').style.display=$('e2t').checked?'':'none';
-  $('e2bw').style.display=$('e2m').value==='due'?'':'none';
-  $('e2rw').style.display=$('e2m').value==='range'?'':'none'
+  $('e2bw').style.display=(m==='range'&&!en)?'':'none';
+  var o=$('e2f').options,S0=m==='due'?'期限日':'開始日';
+  o[1].textContent=S0+'から';o[2].textContent=S0+'の○日前から';o[3].textContent=S0+'の○日後から';o[4].textContent='終了日の○日前から';
+  o[3].disabled=m==='due';o[4].disabled=m!=='range';
+  if(o[$('e2f').selectedIndex].disabled)$('e2f').value='now';
+  var f=$('e2f').value;
+  $('e2nw').style.display=(f==='sb'||f==='sa'||f==='eb')?'':'none'
 }
 function addEv(){
   if(EM){saveEv();return}
   var v=$('evin').value.trim();if(!v){$('evw').textContent='タイトルを入力してください';return}
   if($('evk').value==='rep'&&$('rp1').value&&!$('rp2').value){openSeries(v);return}
-  var ds=gen();if(!ds.length){$('evw').textContent=warn();return}
+  var kone=$('evk').value==='one',sp=kone?evSpan():null,ds=kone?(sp.date?[sp.date]:[]):gen();
+  if(!ds.length){$('evw').textContent=warn();return}
   $('evw').textContent='';
-  var tm=$('evtm').value,sid=$('evk').value==='one'?undefined:id(),t=$('e2t').checked,mm=$('evmemo').value;
+  var tm=$('evtm').value,sid=kone?undefined:id(),mm=$('evmemo').value,lk=$('e2t').checked?mkLk():null;
   if(sid)S.rules[sid]={k:$('evk').value,rule:$('evk').value==='rep'?formRule():null,rp1:$('rp1').value,rp2:$('rp2').value,adj:$('hadj').value};
-  var lazy=t&&$('evk').value!=='one'&&$('e2w').value==='lazy',tcf={m:$('e2m').value,b:Number($('e2b').value)||0,a:$('e2a').checked};
-  ds.forEach(function(x){var eid=id(),ev={id:eid,text:v,date:x,time:tm,sid:sid,memo:mm,col:EC};S.events.push(ev);
-    if(t){var dd=tdDates(x);if(lazy){if((dd.date||dd.start)>=today)ev.tc={m:tcf.m,b:tcf.b,a:tcf.a}}else S.todos.push({id:id(),text:v,start:dd.start,date:dd.date,time:tm,done:false,eventId:eid,memo:mm,auto:$('e2a').checked})}});
+  ds.forEach(function(x){
+    var ev={id:id(),text:v,date:x,time:tm,sid:sid,memo:mm,col:EC};
+    if(kone&&sp.end)ev.end=sp.end;
+    if(lk)ev.lk=Object.assign({},lk);
+    S.events.push(ev);if(lk)syncTodo(ev,true)
+  });
   $('evin').value='';$('evmemo').value='';IR=[];irl();$('evm').classList.remove('on');
   sel=ds[0];view=pd(ds[0]);view.setDate(1);save();render()
 }
@@ -708,7 +718,7 @@ function shk(){
   $('hl').style.display=q==='one'?'none':'';e2u()
 }
 function shr(){var q=$('rt').value;$('rw').style.display=q==='w'?'':'none';$('rm').style.display=q==='m'?'':'none';$('rn').style.display=q==='n'?'':'none'}
-function render(){spawnTodos();cal();evs();todos()}
+function render(){cal();evs();todos()}
 function add(){
   var v=$("tin").value.trim();if(!v)return;
   var dt=$("tdt").value,st=$("tst").value,mm=$("tmemo").value;
@@ -861,9 +871,9 @@ WD.split('').forEach(function(c,i){var l=document.createElement('label');l.inner
 for(var n=1;n<=5;n++){var op=document.createElement('option');op.value=n;op.textContent='第'+n;$('rnn').appendChild(op)}
 $('tdt').onchange=tdu;$('tdt').oninput=tdu;$('tst').onchange=tdu;$('tst').oninput=tdu;
 $('tdc').onclick=function(){$('tdt').value='';$('tst').value='';tdu()};
-$('e2t').onchange=e2u;$('e2m').onchange=e2u;document.querySelectorAll('input[name=esc]').forEach(function(r){r.onchange=function(){if(!this.checked)return;ESC=this.value;$('evk').value=ESC==='all'?EK:'one';$('evw').textContent='';shk()}});
-['e2t','e2m','e2b','e2s','e2d','e2a'].forEach(function(i){['change','input'].forEach(function(t){$(i).addEventListener(t,function(){tdTouched=true})})});
-$('evk').onchange=function(){$('evw').textContent='';shk()};$('rt').onchange=shr;
+$('e2t').onchange=e2u;$('e2m').onchange=e2u;$('e2f').onchange=e2u;['evd','eve'].forEach(function(i){['input','change'].forEach(function(t){$(i).addEventListener(t,e2u)})});document.querySelectorAll('input[name=esc]').forEach(function(r){r.onchange=function(){if(!this.checked)return;ESC=this.value;$('evk').value=ESC==='all'?EK:'one';$('evw').textContent='';shk()}});
+['e2t','e2m','e2b','e2f','e2n','e2a'].forEach(function(i){['change','input'].forEach(function(t){$(i).addEventListener(t,function(){tdTouched=true})})});
+$('evk').onchange=function(){$('evw').textContent='';if($('evk').value!=='one'&&$('e2f').value==='now')$('e2f').value='s0';shk()};$('rt').onchange=shr;
 function openEv(){
   var w=pd(sel),e=pd(sel);
   if(EM)$('e2t').checked=false;EM=null;tdTouched=false;$('evin').value='';$('evmemo').value='';$('evh').textContent='予定を追加';$('evad').textContent='登録';$('evkw').style.display='';$('evk').value='one';$('escw').style.display='none';ESC='this';$('evdw').style.display='none';$('evtm').value='';setEC(0);
@@ -871,7 +881,7 @@ function openEv(){
   MD=[w.getDate()];mdg();
   $('rnn').value=Math.ceil(w.getDate()/7);$('rnd').value=w.getDay();
   document.querySelectorAll('#rw input').forEach(function(c){c.checked=Number(c.value)===w.getDay()});
-  IR=[];irl();mview=pd(sel);mview.setDate(1);mcal();$('evw').textContent='';$('e2a').checked=false;$('e2m').value='due';$('e2w').value='lazy';$('e2b').value='';$('e2s').value='';$('e2d').value='';shk();shr();$('evm').classList.add('on')
+  IR=[];irl();mview=pd(sel);mview.setDate(1);mcal();$('evw').textContent='';$('eve').value='';$('e2c').value='all';$('e2a').checked=false;$('e2m').value='due';$('e2f').value='now';$('e2n').value='';$('e2b').value='';shk();shr();$('evm').classList.add('on')
 }
 $('evopen').onclick=openEv;
 $('vh').onpointerdown=function(ev){
@@ -887,7 +897,6 @@ $('swk').checked=S.set.wk;$('shl').checked=S.set.hol;
 $('swk').onchange=function(){S.set.wk=this.checked;save();render()};
 $('shl').onchange=function(){S.set.hol=this.checked;save();render()};
 $('sdir').onchange=function(){S.lay.dir=this.value;save();layout()};
-$('tidy').onclick=function(){ask('繰り返し予定から入っている、先の日付のTodoを一度外します(その日が来たら自動で入ります)。よろしいですか?',function(){var n=tidyTodos();$('tidym').textContent=n+'件を整理しました。'})};
 $('setb').onclick=function(){cll();sord();$('sdir').value=S.lay.dir;$('stm').classList.add('on')};
 $('stx').onclick=function(){$('stm').classList.remove('on')};
 $('cad').onclick=function(){var s=$('cs').value,e=$('ce').value||s;if(!s)return;if(e<s)e=s;var a=pd(s),b=pd(e),nm=$('cn').value.trim();S.cl.push($('cy').checked?{id:id(),name:nm,yearly:true,sm:a.getMonth()+1,sd:a.getDate(),em:b.getMonth()+1,ed:b.getDate()}:{id:id(),name:nm,yearly:false,s:s,e:e});$('cn').value='';$('cs').value='';$('ce').value='';save();cll();render()};
@@ -908,7 +917,7 @@ $('edsv').onclick=function(){
   }else{
     r.text=v;r.start=$('eds').value;r.date=$('edd').value;r.auto=$('edau').checked;r.memo=$('edmm').value;
     if(r.start&&r.date&&r.start>r.date){var zz=r.start;r.start=r.date;r.date=zz}
-    if(r.eventId)S.events.forEach(function(z){if(z.id===r.eventId){z.text=v;z.date=r.date||r.start||z.date;z.memo=r.memo}})
+    if(r.eventId)S.events.forEach(function(z){if(z.id===r.eventId){var nd=r.date||r.start||z.date;if(z.end)z.end=addDays(z.end,daysBetween(z.date,nd));z.text=v;z.date=nd;z.memo=r.memo;delete z.lk}})
   }
   $('edm').classList.remove('on');ET=null;save();render()
 };
@@ -928,7 +937,7 @@ $('dted').onclick=function(){if(!DV)return;var e=DV;$('dtm').classList.remove('o
 
 layout();function chkDay(){var n=k(new Date());if(n!==today){if(sel===today)sel=n;today=n;render()}}
 document.addEventListener('visibilitychange',chkDay);setInterval(chkDay,60000);
-render();initMemos();
+migrateLk();render();initMemos();
 })();
 </script>
 </body>
