@@ -187,11 +187,19 @@ textarea{width:100%;resize:vertical}
 <div id='dtb'></div>
 </div></div>
 
+<!-- 表示時期前のTodo一覧 -->
+<div class='ov' id='hdm'><div class='md' style='width:min(480px,100%)'>
+<h2><span>まだ表示時期になっていないTodo</span><button id='hdx'>✕</button></h2>
+<div class='mu' style='margin-bottom:6px'>表示する日になると、自動でTodo欄に出ます。クリックで編集できます。</div>
+<div id='hdl'></div>
+</div></div>
+
 <!-- 編集 -->
 <div class='ov' id='edm'><div class='md'>
 <h2><span id='edh'>予定を編集</span> <button id='edx'>✕</button></h2>
 <label>見出し</label><input type='text' id='edt'>
 <div class='row'><div style='flex:1;display:none' id='edsw'><label>開始</label><input type='date' id='eds' style='width:100%'></div><div style='flex:1'><label id='eddl'>日付</label><input type='date' id='edd' style='width:100%'></div><div style='flex:1' id='edtmw'><label>時刻(任意)</label><input type='time' id='edtm' style='width:100%'></div></div>
+<div id='edfw' style='display:none'><label>Todo欄に出す日(空欄=すぐ表示)</label><input type='date' id='edfr' style='width:100%'></div>
 <div id='edmw'><label>メモ(長文OK)</label><textarea id='edmm' rows='8'></textarea></div>
 <label class='ck' id='edauw' style='display:none'><input type='checkbox' id='edau'>期間中は自動で太字にする</label>
 <label class='ck' id='edallw' style='display:none'><input type='checkbox' id='edall'>同じ繰り返しの予定すべてに、見出し・時刻・メモを反映</label>
@@ -358,7 +366,24 @@ function todos(){
     st.onclick=function(){t.today=on?"":"1";save();todos()};
     r.appendChild(gh);r.appendChild(cb);r.appendChild(b);r.appendChild(st);r.appendChild(del);l.appendChild(r)
   });
-  if(hid){var ft=el("div","mu","まだ表示時期になっていないTodo: "+hid+"件(その日が来ると出ます)");ft.style.padding="6px 2px";l.appendChild(ft)}
+  if(hid){var ft=el("div","mu","まだ表示時期になっていないTodo: "+hid+"件(その日が来ると出ます)▸一覧を見る");ft.style.cssText="padding:6px 2px;cursor:pointer;text-decoration:underline;color:var(--ac)";ft.title="押すと一覧を表示。そこから編集できます";ft.onclick=function(){$('hdm').classList.add('on');hidList()};l.appendChild(ft)}
+}
+/* 表示時期前のTodoの一覧(クリックで編集) */
+function hidList(){
+  var l=$('hdl');l.innerHTML='';
+  var a=S.todos.filter(function(t){return t.from&&t.from>today&&!t.done}).sort(function(x,y){return x.from<y.from?-1:x.from>y.from?1:0});
+  if(!a.length){l.appendChild(el('div','mu','該当するTodoはありません'));return}
+  var fw=function(x){return fd(x)+'('+WDN[pd(x).getDay()]+')'};
+  a.forEach(function(t){
+    var r=el('div','ev');r.style.cursor='pointer';r.title='クリックで編集';r.onclick=function(){editTd(t)};
+    var w=el('div');w.style.cssText='flex:1;min-width:0';
+    w.appendChild(el('div',null,(t.eventId?'📅 ':'')+(t.time?t.time+' ':'')+t.text));
+    var ds=t.start&&t.date?'期間: '+fw(t.start)+'〜'+fw(t.date):t.date?'期限: '+fw(t.date):t.start?'開始: '+fw(t.start):'';
+    if(ds){var d=el('div','mu',ds);d.style.fontSize='11px';w.appendChild(d)}
+    r.appendChild(w);
+    var f=el('span','mu',fw(t.from)+'から表示');f.style.cssText='white-space:nowrap;font-size:12px;align-self:center';r.appendChild(f);
+    l.appendChild(r)
+  })
 }
 /* Todoのドラッグ並べ替え(挿入位置に太線) */
 function tdDrag(ev,arr,from,row,list){
@@ -718,7 +743,7 @@ function shk(){
   $('hl').style.display=q==='one'?'none':'';e2u()
 }
 function shr(){var q=$('rt').value;$('rw').style.display=q==='w'?'':'none';$('rm').style.display=q==='m'?'':'none';$('rn').style.display=q==='n'?'':'none'}
-function render(){cal();evs();todos()}
+function render(){cal();evs();todos();if($('hdm').classList.contains('on'))hidList()}
 function add(){
   var v=$("tin").value.trim();if(!v)return;
   var dt=$("tdt").value,st=$("tst").value,mm=$("tmemo").value;
@@ -904,7 +929,7 @@ $('cad').onclick=function(){var s=$('cs').value,e=$('ce').value||s;if(!s)return;
 /* ---------- 編集モーダル ---------- */
 var ET=null;
 function editEv(e){openEdit(e)}
-function editTd(t){ET={k:'td',r:t};$('edh').textContent='Todoを編集';$('edt').value=t.text;$('edd').value=t.date||'';$('edmm').value=t.memo||'';$('eds').value=t.start||'';$('edsw').style.display='';$('eddl').textContent='期限';$('edau').checked=!!t.auto;$('edauw').style.display='';$('edtmw').style.display='none';$('edmw').style.display='';$('edallw').style.display='none';$('edcut').style.display='none';$('edm').classList.add('on')}
+function editTd(t){ET={k:'td',r:t};$('edh').textContent='Todoを編集';$('edt').value=t.text;$('edd').value=t.date||'';$('edmm').value=t.memo||'';$('eds').value=t.start||'';$('edsw').style.display='';$('eddl').textContent='期限';$('edau').checked=!!t.auto;$('edauw').style.display='';$('edfr').value=t.from||'';$('edfw').style.display='';$('edtmw').style.display='none';$('edmw').style.display='';$('edallw').style.display='none';$('edcut').style.display='none';$('edm').classList.add('on')}
 $('edx').onclick=function(){$('edm').classList.remove('on');ET=null};
 $('edsv').onclick=function(){
   var v=$('edt').value.trim();if(!v||!ET)return;var r=ET.r;
@@ -915,7 +940,7 @@ $('edsv').onclick=function(){
     if($('edall').checked&&r.sid)S.series.forEach(function(z){if(z.sid===r.sid){z.text=v;z.time=tm;z.memo=mm}});
     sel=d;view=pd(d);view.setDate(1)
   }else{
-    r.text=v;r.start=$('eds').value;r.date=$('edd').value;r.auto=$('edau').checked;r.memo=$('edmm').value;
+    r.text=v;r.start=$('eds').value;r.date=$('edd').value;r.auto=$('edau').checked;r.from=$('edfr').value;r.memo=$('edmm').value;
     if(r.start&&r.date&&r.start>r.date){var zz=r.start;r.start=r.date;r.date=zz}
     if(r.eventId)S.events.forEach(function(z){if(z.id===r.eventId){var nd=r.date||r.start||z.date;if(z.end)z.end=addDays(z.end,daysBetween(z.date,nd));z.text=v;z.date=nd;z.memo=r.memo;delete z.lk}})
   }
@@ -933,7 +958,8 @@ function edelGo(){
 };
 $('dtx').onclick=function(){$('dtm').classList.remove('on')};
 $('dted').onclick=function(){if(!DV)return;var e=DV;$('dtm').classList.remove('on');openEdit(e)};
-['evm','stm','edm','cfm','dtm'].forEach(function(i){$(i).onclick=function(e){if(e.target===this)this.classList.remove('on')}});
+$('hdx').onclick=function(){$('hdm').classList.remove('on')};
+['evm','stm','edm','cfm','dtm','hdm'].forEach(function(i){$(i).onclick=function(e){if(e.target===this)this.classList.remove('on')}});
 
 layout();function chkDay(){var n=k(new Date());if(n!==today){if(sel===today)sel=n;today=n;render()}}
 document.addEventListener('visibilitychange',chkDay);setInterval(chkDay,60000);
