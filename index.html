@@ -3,7 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex, nofollow">
 <title>仕事ボード</title>
 <style>
 :root{--bg:#f3f4f6;--card:#fff;--tx:#1f2937;--mu:#6b7280;--bd:#e5e7eb;--ac:#2563eb;--acx:#fff;--red:#dc2626;--blue:#2563eb;--sel:#dbeafe;--hl:#fff4c2;
@@ -107,6 +106,7 @@ textarea{width:100%;resize:vertical}
 .vh::after{content:"";width:44px;height:4px;border-radius:2px;background:var(--bd)}.vh:hover::after{background:var(--ac)}
 .sw{width:20px;height:20px;border-radius:50%;border:2px solid transparent;padding:0;cursor:pointer}
 .sw.on{border-color:var(--tx);box-shadow:0 0 0 2px var(--card) inset}
+.dl{display:grid;grid-template-columns:72px 1fr;gap:6px 8px;font-size:13px}.dk{color:var(--mu);font-size:12px;padding-top:1px}.dv{word-break:break-word;white-space:pre-wrap;line-height:1.35}
 </style>
 </head>
 <body>
@@ -151,6 +151,7 @@ textarea{width:100%;resize:vertical}
 <!-- 予定追加 -->
 <div class='ov' id='evm'><div class='md'>
 <h2><span id='evh'>予定を追加</span> <button id='evx'>✕</button></h2>
+<div id='escw' style='display:none'><div class='row' style='margin:0 0 4px'><span class='mu'>編集の対象</span><label class='ck'><input type='radio' name='esc' value='this' checked>この予定だけ</label><label class='ck'><input type='radio' name='esc' value='all'>同じ繰り返し全体(条件も変更できます)</label></div></div>
 <div class='sec' style='margin-top:4px'>基本</div>
 <label>タイトル</label><input type='text' id='evin'>
 <label>色</label><div id='evc' class='row'></div>
@@ -168,18 +169,23 @@ textarea{width:100%;resize:vertical}
 <div class='mc'><div class='cal-h'><button id='mpm'>‹</button><span id='mml'></span><button id='mnm'>›</button></div><div class='grid' id='mcal'></div></div>
 <div id='idl' style='margin-top:4px'></div></div>
 <div id='hl' style='display:none'><label>休日(土日・祝日・会社の休み)に当たる場合</label><select id='hadj'><option value='keep'>そのまま</option><option value='next'>次営業日にずらす</option><option value='prev'>前営業日にずらす</option></select></div>
-<label class='ck' id='eallw' style='display:none;margin-top:10px'><input type='checkbox' id='eall'>同じ繰り返しの予定すべてに反映(タイトル・時刻・メモ・色・Todo連動)</label>
 <div class='sec'>Todoとの連動</div>
 <label class='ck' style='margin-top:6px'><input type='checkbox' id='e2t'>Todoにも登録</label>
 <div id='e2o' class='row' style='display:none'>
-<select id='e2m'><option value='due'>予定日が期限</option><option value='start'>予定日から開始(期限未定)</option><option value='range'>期間を指定</option></select>
+<select id='e2m'><option value='due'>上記日付が期限</option><option value='start'>上記日付から開始(期限未定)</option><option value='range'>期間を指定</option></select>
 <select id='e2w' title='Todoに入るタイミング'><option value='lazy'>その日(開始日)が来たらTodoに入れる</option><option value='now'>今すぐ全部Todoに入れる</option></select>
 <label class='ck'><input type='checkbox' id='e2a'>期間中は自動で太字</label>
-<span id='e2bw' class='mu'>開始: 予定日の<input type='number' id='e2b' min='0' max='365' style='width:52px' placeholder='0'>日前から(空欄=なし)</span>
+<span id='e2bw' class='mu'>開始: 上記日付の<input type='number' id='e2b' min='0' max='365' style='width:52px' placeholder='0'>日前から(空欄=なし)</span>
 <span id='e2rw' class='mu' style='display:none'>開始<input type='date' id='e2s' style='width:122px;font-size:12px'> 期限<input type='date' id='e2d' style='width:122px;font-size:12px'></span>
 </div>
 <div class='mf'><div id='evw' style='color:var(--red);font-size:13px'></div>
 <div class='row' style='justify-content:space-between;margin:4px 0 0'><span id='evdw' style='display:none'><button id='evdel'>削除</button> <button id='evcut' style='display:none' title='この日以降の同じ繰り返しを削除して、繰り返しを終わらせます'>この日以降も削除</button></span><button class='p' id='evad' style='margin-left:auto'>登録</button></div></div>
+</div></div>
+
+<!-- 予定の詳細 -->
+<div class='ov' id='dtm'><div class='md' style='width:min(420px,100%)'>
+<h2><span>予定の詳細</span><span><button class='p' id='dted'>✎ 編集</button> <button id='dtx'>✕</button></span></h2>
+<div id='dtb'></div>
 </div></div>
 
 <!-- 編集 -->
@@ -230,7 +236,7 @@ var KEY="taskboard.v1",PANES=['cal','todo','memo'],PN={cal:'カレンダー',tod
 COLS=[['#2563eb','#fff','青'],['#22d3ee','#083344','水色'],['#16a34a','#fff','緑'],['#facc15','#422006','黄'],['#f97316','#431407','オレンジ'],['#dc2626','#fff','赤'],['#ec4899','#fff','ピンク'],['#7c3aed','#fff','紫'],['#92400e','#fff','茶'],['#6b7280','#fff','グレー']];
 var S={todos:[],events:[],filter:"all",w:{cal:1,todo:1.2,memo:1.2},set:{wk:true,hol:true},
   cl:[{id:'d1',name:'年末年始',yearly:true,sm:12,sd:29,em:1,ed:3}],
-  lay:{dir:'h',order:PANES.slice()},vis:{cal:true,todo:true,memo:true},memos:[],mcur:null,series:[],dayH:62};
+  lay:{dir:'h',order:PANES.slice()},vis:{cal:true,todo:true,memo:true},memos:[],mcur:null,series:[],dayH:62,rules:{}};
 var legacyMemo;
 try{var r=localStorage.getItem(KEY);if(r){var o=JSON.parse(r);
   S.todos=o.todos||[];S.events=o.events||[];S.filter=o.filter==="open"?"open":"all";
@@ -240,7 +246,7 @@ try{var r=localStorage.getItem(KEY);if(r){var o=JSON.parse(r);
   if(o.lay){if(o.lay.dir==='v')S.lay.dir='v';var od=o.lay.order;if(Array.isArray(od)&&od.length===3&&PANES.every(function(p){return od.indexOf(p)>=0}))S.lay.order=od}
   if(o.vis)for(var q1 in o.vis)S.vis[q1]=!!o.vis[q1];
   if(o.notes)S.notes=o.notes;
-  if(Array.isArray(o.memos))S.memos=o.memos;if(Array.isArray(o.series))S.series=o.series;if(o.dayH)S.dayH=o.dayH;
+  if(Array.isArray(o.memos))S.memos=o.memos;if(Array.isArray(o.series))S.series=o.series;if(o.dayH)S.dayH=o.dayH;if(o.rules)S.rules=o.rules;
   S.mcur=o.mcur||null;legacyMemo=o.memo}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function k(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
@@ -314,7 +320,7 @@ function evDrag(chip,e){
     function up(){
       document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);document.removeEventListener('pointercancel',up);
       if(gh)gh.remove();
-      if(!moved){editEv(e);return}
+      if(!moved){showEv(e);return}
       lastDrag=Date.now();
       var key=hot&&hot.dataset.k;
       if(key&&key!==e.date){
@@ -387,7 +393,7 @@ function tdDrag(ev,arr,from,row,list){
 
 /* ---------- 選択日の予定一覧 ---------- */
 function evs(){var l=$("evl");l.innerHTML="";S.events.filter(function(e){return e.date===sel}).sort(function(a,b){return (a.time||"")<(b.time||"")?-1:1}).forEach(function(e){
-  var r=el("div","ev");r.style.cursor="pointer";r.title="クリックで編集";r.style.borderLeft="4px solid "+COLS[e.col||0][0];r.style.paddingLeft="4px";r.onclick=function(){editEv(e)};
+  var r=el("div","ev");r.style.cursor="pointer";r.title="クリックで詳細を表示";r.style.borderLeft="4px solid "+COLS[e.col||0][0];r.style.paddingLeft="4px";r.onclick=function(){showEv(e)};
   var s=el("span",null,"📅 "+(e.time?e.time+" ":"")+e.text);
   var d=el("button","del","✕");d.onclick=function(ev){ev.stopPropagation();ask('予定「'+e.text+'」を削除しますか?'+(S.todos.some(function(z){return z.eventId===e.id})?'(連動したTodoも削除されます)':''),function(){S.events=S.events.filter(function(z){return z!==e});S.todos=S.todos.filter(function(z){return z.eventId!==e.id});save();render()})};
   var w=el('div');w.style.cssText='flex:1;min-width:0';w.appendChild(s);
@@ -478,11 +484,12 @@ function openSeries(v){
   var rl=formRule();
   if((rl.t==='w'&&!rl.wd.length)||(rl.t==='m'&&!rl.md.length)){$('evw').textContent=warn();return}
   var sid=id(),st=$('rp1').value,lim=horizon();
+  S.rules[sid]={k:'rep',rule:rl,rp1:st,rp2:'',adj:$('hadj').value};
   S.series.push({id:sid,sid:sid,col:EC,text:v,time:$('evtm').value,memo:$('evmemo').value,adj:$('hadj').value,rule:rl,upto:prevDay(st),todo:{on:$('e2t').checked,m:$('e2m').value,b:Number($('e2b').value)||0,a:$('e2a').checked},lazy:$('e2w').value==='lazy'});
   if(st>lim){var q=pd(st);q.setDate(q.getDate()+366);lim=k(q)}
   extSeries(lim);
   var ds=S.events.filter(function(z){return z.sid===sid}).map(function(z){return z.date}).sort();
-  if(!ds.length){S.series.pop();$('evw').textContent='条件に合う日がありません';return}
+  if(!ds.length){S.series.pop();delete S.rules[sid];$('evw').textContent='条件に合う日がありません';return}
   $('evw').textContent='';$('evin').value='';$('evmemo').value='';IR=[];irl();$('evm').classList.remove('on');
   sel=ds[0];view=pd(ds[0]);view.setDate(1);save();render()
 }
@@ -505,16 +512,68 @@ function warn(){
   var t=$('rt').value;
   return t==='w'?'曜日を選んでください':t==='m'?'毎月の日にちを選んでください':'条件に合う日がありません'
 }
-var EC=0,EM=null,tdTouched=false;
+var EC=0,EM=null,tdTouched=false,ESC='this',EK='one',DV=null,WDN='日月火水木金土';
 function setEC(i){EC=i;var w=$('evc');w.innerHTML='';COLS.forEach(function(c,j){var b=el('button','sw'+(j===EC?' on':''));b.style.background=c[0];b.title=c[2];b.onclick=function(){setEC(j)};w.appendChild(b)})}
+function fdw(x){var d=pd(x);return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+'('+WDN[d.getDay()]+')'}
+/* 繰り返しの条件を取り出す(条件を保存していない古いデータは「不定期(日付の一覧)」として扱う) */
+function seriesSpec(e){
+  var ds=S.events.filter(function(z){return z.sid===e.sid}).map(function(z){return z.date}).sort(),m=S.rules[e.sid],op=S.series.filter(function(z){return z.sid===e.sid})[0];
+  if(m&&m.k==='rep'&&m.rule)return {k:'rep',rule:m.rule,rp1:m.rp1||ds[0],rp2:m.rp2||'',adj:m.adj||'keep'};
+  if(op)return {k:'rep',rule:op.rule,rp1:(m&&m.rp1)||ds[0],rp2:'',adj:op.adj||'keep'};
+  return {k:'irr',irr:ds,adj:(m&&m.adj)||'keep'}
+}
+function recDesc(e){
+  if(!e.sid)return '1回のみ';
+  var sp=seriesSpec(e),n=S.events.filter(function(z){return z.sid===e.sid}).length,tx;
+  if(sp.k==='irr'){var l=sp.irr.map(fd);tx='不定期('+n+'日: '+l.slice(0,6).join(', ')+(l.length>6?' …':'')+')'}
+  else{var r=sp.rule;
+    tx=r.t==='w'?'毎週 '+r.wd.slice().sort().map(function(i){return WDN[i]}).join('・')+'曜':r.t==='m'?'毎月 '+r.md.slice().sort(function(a,b){return a-b}).join('・')+'日':'毎月 第'+r.nn+WDN[r.nd]+'曜';
+    tx+=' / '+fd(sp.rp1)+' 〜 '+(sp.rp2?fd(sp.rp2):'終了なし')}
+  if(sp.adj==='next')tx+=' / 休日は次の営業日へ';else if(sp.adj==='prev')tx+=' / 休日は前の営業日へ';
+  return tx
+}
+function todoDesc(e){
+  var t=S.todos.filter(function(z){return z.eventId===e.id})[0];
+  if(t){var s=t.start&&t.date?fd(t.start)+' 〜 '+fd(t.date):t.start?fd(t.start)+' 〜':'期限 '+fd(t.date);return 'あり('+s+(t.auto?'・期間中は自動で太字':'')+(t.done?'・完了':'')+')'}
+  if(e.tc)return '予約中(その日が来たらTodoに入ります)';
+  return 'なし'
+}
+/* 予定をクリック: 詳細を一覧表示(右上に編集ボタン) */
+function showEv(e){
+  DV=e;var b=$('dtb');b.innerHTML='';
+  var cc=COLS[e.col||0],ttl=el('div',null,e.text);
+  ttl.style.cssText='font-size:15px;font-weight:700;margin:2px 0 10px;padding-left:8px;border-left:5px solid '+cc[0]+';word-break:break-word';b.appendChild(ttl);
+  var dl=el('div','dl');
+  function row(k,v){dl.appendChild(el('div','dk',k));var d=el('div','dv');if(typeof v==='string')d.textContent=v;else d.appendChild(v);dl.appendChild(d)}
+  row('日付',fdw(e.date)+(hn(e.date)?' '+hn(e.date):''));
+  row('時刻',e.time||'なし');
+  var cv=el('span'),dot=el('span');dot.style.cssText='display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:'+cc[0];cv.appendChild(dot);cv.appendChild(document.createTextNode(cc[2]));row('色',cv);
+  row('繰り返し',recDesc(e));
+  row('Todo連動',todoDesc(e));
+  row('メモ',e.memo||'なし');
+  b.appendChild(dl);$('dtm').classList.add('on')
+}
+/* 繰り返し入力欄に値を入れる */
+function fillRule(ds,sp){
+  var w=pd(ds),r=sp&&sp.rule;
+  $('rt').value=r?r.t:'w';
+  document.querySelectorAll('#rw input').forEach(function(c){c.checked=(r&&r.t==='w')?r.wd.indexOf(Number(c.value))>=0:Number(c.value)===w.getDay()});
+  MD=(r&&r.t==='m')?r.md.slice():[w.getDate()];mdg();
+  $('rnn').value=(r&&r.t==='n')?r.nn:Math.ceil(w.getDate()/7);$('rnd').value=(r&&r.t==='n')?r.nd:w.getDay();
+  $('rp1').value=(sp&&sp.rp1)||ds;$('rp2').value=sp?(sp.rp2||''):'';
+  $('hadj').value=(sp&&sp.adj)||'keep';
+  IR=(sp&&sp.irr)?sp.irr.slice():[];irl();mview=pd(IR[0]||ds);mview.setDate(1);mcal();shr()
+}
 /* 予定の編集: 追加画面と同じ項目で編集する */
 function openEdit(e){
-  EM=e;tdTouched=false;
+  EM=e;tdTouched=false;ESC='this';
   $('evh').textContent='予定を編集';$('evad').textContent='保存';
-  $('evkw').style.display='none';$('evk').value='one';
   $('evin').value=e.text;$('evtm').value=e.time||'';$('evmemo').value=e.memo||'';$('evd').value=e.date;
   setEC(e.col||0);
-  $('eallw').style.display=e.sid?'':'none';$('eall').checked=false;
+  $('escw').style.display=e.sid?'':'none';document.querySelector('input[name=esc][value=this]').checked=true;
+  var sp=e.sid?seriesSpec(e):null;EK=sp?sp.k:'one';fillRule(e.date,sp);
+  if(!e.sid){IR=[e.date];irl();mcal()}
+  $('evk').value='one';
   $('evdw').style.display='';$('evcut').style.display=e.sid?'':'none';
   var t=S.todos.filter(function(z){return z.eventId===e.id})[0],on=!!(t||e.tc),m='due',b=0,a=false,rs='',rd='';
   if(t){a=!!t.auto;
@@ -522,10 +581,10 @@ function openEdit(e){
     else if(t.date===e.date){m='due';b=t.start?Math.round((pd(t.date)-pd(t.start))/86400000):0}
     else{m='range';rs=t.start||'';rd=t.date||''}
   }else if(e.tc){m=e.tc.m;b=e.tc.b||0;a=!!e.tc.a}
-  $('e2t').checked=on;$('e2m').value=m;$('e2b').value=b||'';$('e2s').value=rs;$('e2d').value=rd;$('e2a').checked=a;
+  $('e2t').checked=on;$('e2m').value=m;$('e2b').value=b||'';$('e2s').value=rs;$('e2d').value=rd;$('e2a').checked=a;$('e2w').value='lazy';
   $('evw').textContent='';shk();$('evm').classList.add('on')
 }
-function applyTodoLink(z,all){
+function applyTodoLink(z,all,lazy){
   var t=S.todos.filter(function(x){return x.eventId===z.id})[0];
   if(!$('e2t').checked){S.todos=S.todos.filter(function(x){return x.eventId!==z.id});delete z.tc;return}
   var c={m:$('e2m').value,b:Number($('e2b').value)||0,a:$('e2a').checked};
@@ -533,20 +592,59 @@ function applyTodoLink(z,all){
   var dd=tdDates(z.date,c);
   if(t){t.start=dd.start;t.date=dd.date;t.auto=c.a;t.text=z.text;t.time=z.time;t.memo=z.memo;delete z.tc}
   else if(z.tc){z.tc=c}
+  else if(lazy){if((dd.date||dd.start)>=today)z.tc=c}
   else S.todos.push({id:id(),text:z.text,start:dd.start,date:dd.date,time:z.time,done:false,eventId:z.id,memo:z.memo,auto:c.a})
 }
 function saveEv(){
-  var e=EM,v=$('evin').value.trim(),d=$('evd').value;
+  var e=EM,v=$('evin').value.trim(),kind=$('evk').value;
   if(!v){$('evw').textContent='タイトルを入力してください';return}
+  if((e.sid&&ESC==='all')||(!e.sid&&kind!=='one')){saveAll(e,v,kind);return}
+  var d=$('evd').value,tm=$('evtm').value,mm=$('evmemo').value;
   if(!d){$('evw').textContent='日付を入力してください';return}
-  var all=!!(e.sid&&$('eall').checked),tg=all?S.events.filter(function(z){return z.sid===e.sid}):[e],tm=$('evtm').value,mm=$('evmemo').value;
-  tg.forEach(function(z){
-    var old=z.date;z.text=v;z.time=tm;z.memo=mm;z.col=EC;if(z===e)z.date=d;
-    if(tdTouched)applyTodoLink(z,all);
-    else S.todos.forEach(function(t){if(t.eventId===z.id){t.text=v;t.time=tm;t.memo=mm;if(z===e&&old!==d)setTdDate(t,d)}})
-  });
-  if(all)S.series.forEach(function(z){if(z.sid===e.sid){z.text=v;z.time=tm;z.memo=mm;z.col=EC;if(tdTouched)z.todo={on:$('e2t').checked,m:$('e2m').value==='range'?'due':$('e2m').value,b:Number($('e2b').value)||0,a:$('e2a').checked}}});
+  var old=e.date;e.text=v;e.time=tm;e.memo=mm;e.col=EC;e.date=d;
+  if(tdTouched)applyTodoLink(e,false,false);
+  else S.todos.forEach(function(t){if(t.eventId===e.id){t.text=v;t.time=tm;t.memo=mm;if(old!==d)setTdDate(t,d)}});
   $('evm').classList.remove('on');EM=null;sel=d;view=pd(d);view.setDate(1);save();render()
+}
+/* 繰り返し(定期・不定期)の条件を含めて編集。日付が同じ予定はそのまま残し、条件から外れた予定を削除、新しい日付を追加する */
+function saveAll(e,v,kind){
+  var tm=$('evtm').value,mm=$('evmemo').value,adjm=$('hadj').value,rl=null,rp1='',rp2='',lim=horizon(),nd=[];
+  if(kind==='rep'){
+    rl=formRule();rp1=$('rp1').value;rp2=$('rp2').value;
+    if(!rp1){$('evw').textContent='開始日を入力してください';return}
+    if((rl.t==='w'&&!rl.wd.length)||(rl.t==='m'&&!rl.md.length)){$('evw').textContent=warn();return}
+    if(rp1>lim){var q=pd(rp1);q.setDate(q.getDate()+366);lim=k(q)}
+    nd=ruleDates(rl,rp1,rp2||lim)
+  }else nd=IR.slice();
+  var seen={};nd=nd.map(function(x){return adj(x,adjm)}).filter(function(x){if(seen[x])return false;seen[x]=1;return true}).sort();
+  if(!nd.length){$('evw').textContent=kind==='irr'?warn():'条件に合う日がありません';return}
+  var sid=e.sid||id(),was=e.sid;
+  var ex=S.events.filter(function(z){return z.sid===sid||z===e}),exd={};ex.forEach(function(z){exd[z.date]=1});
+  var rm=ex.filter(function(z){return nd.indexOf(z.date)<0}),ad=nd.filter(function(x){return !exd[x]});
+  function go(){
+    e.sid=sid;
+    var rmids=rm.map(function(z){return z.id});
+    S.events=S.events.filter(function(z){return rmids.indexOf(z.id)<0});S.todos=S.todos.filter(function(t){return rmids.indexOf(t.eventId)<0});
+    var lazy=$('e2w').value==='lazy';
+    S.events.filter(function(z){return z.sid===sid}).forEach(function(z){
+      z.text=v;z.time=tm;z.memo=mm;z.col=EC;
+      if(tdTouched)applyTodoLink(z,true,lazy);
+      else S.todos.forEach(function(t){if(t.eventId===z.id){t.text=v;t.time=tm;t.memo=mm}})
+    });
+    ad.forEach(function(x){var ev={id:id(),text:v,date:x,time:tm,sid:sid,memo:mm,col:EC};S.events.push(ev);if($('e2t').checked)applyTodoLink(ev,true,lazy)});
+    S.rules[sid]={k:kind,rule:rl,rp1:rp1,rp2:rp2,adj:adjm};
+    var old=S.series.filter(function(z){return z.sid===sid})[0];
+    S.series=S.series.filter(function(z){return z.sid!==sid});
+    if(kind==='rep'&&!rp2){
+      var nw=tdTouched||!old;
+      S.series.push({id:sid,sid:sid,col:EC,text:v,time:tm,memo:mm,adj:adjm,rule:rl,upto:lim,
+        todo:nw?{on:$('e2t').checked,m:$('e2m').value==='range'?'due':$('e2m').value,b:Number($('e2b').value)||0,a:$('e2a').checked}:old.todo,
+        lazy:nw?lazy:old.lazy})
+    }
+    var keep=exd[e.date]&&nd.indexOf(e.date)>=0?e.date:nd[0];
+    $('evm').classList.remove('on');EM=null;sel=keep;view=pd(keep);view.setDate(1);save();render()
+  }
+  if(rm.length)ask('繰り返し条件の変更で、'+rm.length+'件の予定が削除され、'+ad.length+'件が追加されます(削除される予定に連動したTodoも消えます)。よろしいですか?',go);else go()
 }
 function tdDates(x,c){
   var m=c?c.m:$('e2m').value;
@@ -557,8 +655,8 @@ function tdDates(x,c){
   return {start:st,date:x}
 }
 function e2u(){
-  var ko=$('evk').value==='one',one=ko&&!(EM&&EM.sid&&$('eall').checked);
-  $('e2w').style.display=(EM||ko)?'none':'';
+  var one=$('evk').value==='one';
+  $('e2w').style.display=one?'none':'';
   $('e2m').querySelector('option[value=range]').disabled=!one;
   if(!one&&$('e2m').value==='range')$('e2m').value='due';
   $('e2o').style.display=$('e2t').checked?'':'none';
@@ -572,6 +670,7 @@ function addEv(){
   var ds=gen();if(!ds.length){$('evw').textContent=warn();return}
   $('evw').textContent='';
   var tm=$('evtm').value,sid=$('evk').value==='one'?undefined:id(),t=$('e2t').checked,mm=$('evmemo').value;
+  if(sid)S.rules[sid]={k:$('evk').value,rule:$('evk').value==='rep'?formRule():null,rp1:$('rp1').value,rp2:$('rp2').value,adj:$('hadj').value};
   var lazy=t&&$('evk').value!=='one'&&$('e2w').value==='lazy',tcf={m:$('e2m').value,b:Number($('e2b').value)||0,a:$('e2a').checked};
   ds.forEach(function(x){var eid=id(),ev={id:eid,text:v,date:x,time:tm,sid:sid,memo:mm,col:EC};S.events.push(ev);
     if(t){var dd=tdDates(x);if(lazy){if((dd.date||dd.start)>=today)ev.tc={m:tcf.m,b:tcf.b,a:tcf.a}}else S.todos.push({id:id(),text:v,start:dd.start,date:dd.date,time:tm,done:false,eventId:eid,memo:mm,auto:$('e2a').checked})}});
@@ -601,7 +700,13 @@ function mdg(){
 }
 function cll(){var l=$('cll');l.innerHTML='';S.cl.forEach(function(c){var r=el('div','ev');var s=el('span',null,(c.name||'休み')+' : '+(c.yearly?'毎年 '+c.sm+'/'+c.sd+' 〜 '+c.em+'/'+c.ed:c.s+' 〜 '+c.e));var d=el('button','del','✕');d.onclick=function(){S.cl=S.cl.filter(function(z){return z!==c});save();cll();render()};r.appendChild(s);r.appendChild(d);l.appendChild(r)})}
 function tdu(){var h=$('tdt').value||$('tst').value;$('t2el').style.display=h?'':'none';$('tauw').style.display=h?'':'none'}
-function shk(){var q=$('evk').value;$('k-one').style.display=q==='one'?'':'none';$('k-rep').style.display=q==='rep'?'':'none';$('k-irr').style.display=q==='irr'?'':'none';$('hl').style.display=q==='one'?'none':'';e2u()}
+function shk(){
+  var q=$('evk').value,th=!!(EM&&EM.sid&&ESC==='this');
+  $('evkw').style.display=th?'none':'';
+  $('evk').querySelector('option[value=one]').disabled=!!(EM&&EM.sid);
+  $('k-one').style.display=q==='one'?'':'none';$('k-rep').style.display=q==='rep'?'':'none';$('k-irr').style.display=q==='irr'?'':'none';
+  $('hl').style.display=q==='one'?'none':'';e2u()
+}
 function shr(){var q=$('rt').value;$('rw').style.display=q==='w'?'':'none';$('rm').style.display=q==='m'?'':'none';$('rn').style.display=q==='n'?'':'none'}
 function render(){spawnTodos();cal();evs();todos()}
 function add(){
@@ -756,12 +861,12 @@ WD.split('').forEach(function(c,i){var l=document.createElement('label');l.inner
 for(var n=1;n<=5;n++){var op=document.createElement('option');op.value=n;op.textContent='第'+n;$('rnn').appendChild(op)}
 $('tdt').onchange=tdu;$('tdt').oninput=tdu;$('tst').onchange=tdu;$('tst').oninput=tdu;
 $('tdc').onclick=function(){$('tdt').value='';$('tst').value='';tdu()};
-$('e2t').onchange=e2u;$('e2m').onchange=e2u;$('eall').onchange=e2u;
+$('e2t').onchange=e2u;$('e2m').onchange=e2u;document.querySelectorAll('input[name=esc]').forEach(function(r){r.onchange=function(){if(!this.checked)return;ESC=this.value;$('evk').value=ESC==='all'?EK:'one';$('evw').textContent='';shk()}});
 ['e2t','e2m','e2b','e2s','e2d','e2a'].forEach(function(i){['change','input'].forEach(function(t){$(i).addEventListener(t,function(){tdTouched=true})})});
 $('evk').onchange=function(){$('evw').textContent='';shk()};$('rt').onchange=shr;
 function openEv(){
   var w=pd(sel),e=pd(sel);
-  if(EM)$('e2t').checked=false;EM=null;tdTouched=false;$('evin').value='';$('evmemo').value='';$('evh').textContent='予定を追加';$('evad').textContent='登録';$('evkw').style.display='';$('evk').value='one';$('eallw').style.display='none';$('evdw').style.display='none';$('evtm').value='';setEC(0);
+  if(EM)$('e2t').checked=false;EM=null;tdTouched=false;$('evin').value='';$('evmemo').value='';$('evh').textContent='予定を追加';$('evad').textContent='登録';$('evkw').style.display='';$('evk').value='one';$('escw').style.display='none';ESC='this';$('evdw').style.display='none';$('evtm').value='';setEC(0);
   $('evd').value=sel;$('rp1').value=sel;$('rp2').value='';
   MD=[w.getDate()];mdg();
   $('rnn').value=Math.ceil(w.getDate()/7);$('rnd').value=w.getDay();
@@ -817,118 +922,14 @@ function edelGo(){
   else{S.todos=S.todos.filter(function(t){return t!==r})}
   $('edm').classList.remove('on');ET=null;save();render()
 };
-['evm','stm','edm','cfm'].forEach(function(i){$(i).onclick=function(e){if(e.target===this)this.classList.remove('on')}});
+$('dtx').onclick=function(){$('dtm').classList.remove('on')};
+$('dted').onclick=function(){if(!DV)return;var e=DV;$('dtm').classList.remove('on');openEdit(e)};
+['evm','stm','edm','cfm','dtm'].forEach(function(i){$(i).onclick=function(e){if(e.target===this)this.classList.remove('on')}});
 
 layout();function chkDay(){var n=k(new Date());if(n!==today){if(sel===today)sel=n;today=n;render()}}
 document.addEventListener('visibilitychange',chkDay);setInterval(chkDay,60000);
 render();initMemos();
 })();
 </script>
-<!-- ===== Firebase 同期ブロック(ここから)  仕事ボード.html の </body> の直前に貼り付ける ===== -->
-<script type="module">
-import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import {getFirestore,doc,setDoc,onSnapshot,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDZ3i8DOftOsMzL8LOQNFXQl6YMTQ35rtI",
-  authDomain: "shigoto-board-e9f08.firebaseapp.com",
-  projectId: "shigoto-board-e9f08",
-  storageBucket: "shigoto-board-e9f08.firebasestorage.app",
-  messagingSenderId: "997258521125",
-  appId: "1:997258521125:web:7ce86f9daf3b4257a7adcc"
-};
-
-const KEY='taskboard.v1', BK='taskboard.v1.backup', PARTS=['todos','events','memos','prefs'];
-const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
-const _set=Storage.prototype.setItem;
-let uid=null, ready=false, timer=null, unsubs=[], seen={}, last={}, remote={}, applyT=null;
-
-/* ---- 画面(ログイン画面と、上部の同期表示) ---- */
-const ov=document.createElement('div');
-ov.style.cssText='position:fixed;inset:0;z-index:200;background:var(--bg);color:var(--tx);display:flex;align-items:center;justify-content:center;padding:16px';
-ov.innerHTML='<div style="background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:24px;max-width:340px;width:100%;text-align:center"><div style="font-size:18px;font-weight:700;margin-bottom:6px">仕事ボード</div><div class="mu" style="margin-bottom:16px">Googleアカウントでログインすると、どの端末でも同じデータを使えます</div><button class="p" id="sgIn" style="font-size:15px;padding:8px 18px">Googleでログイン</button><div id="sgErr" style="color:var(--red);font-size:12px;margin-top:12px;word-break:break-all"></div></div>';
-document.body.appendChild(ov);
-const chip=document.createElement('span');
-chip.style.cssText='font-weight:400;font-size:12px;color:var(--mu);display:none;align-items:center;gap:6px';
-chip.innerHTML='<span id="sgSt">接続中…</span><button id="sgOut" style="font-size:12px">ログアウト</button>';
-const top=document.querySelector('.top'); top.insertBefore(chip,document.getElementById('setb'));
-const st=(t,bad)=>{const e=document.getElementById('sgSt');e.textContent=t;e.style.color=bad?'var(--red)':'';};
-
-document.getElementById('sgIn').onclick=async()=>{
-  const p=new GoogleAuthProvider(), er=document.getElementById('sgErr'); er.textContent='';
-  try{await signInWithPopup(auth,p)}
-  catch(e){
-    if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment'){try{await signInWithRedirect(auth,p);return}catch(e2){e=e2}}
-    if(e.code!=='auth/popup-closed-by-user'&&e.code!=='auth/cancelled-popup-request')er.textContent='ログインできませんでした('+e.code+')';
-  }
-};
-document.getElementById('sgOut').onclick=()=>signOut(auth);
-
-/* ---- データの取り出し/反映(同期するのは Todo・予定・メモ・休み設定。画面の並びなどは端末ごと) ---- */
-const readLocal=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return {}}};
-const partsOf=o=>({
-  todos:JSON.stringify(o.todos||[]),
-  events:JSON.stringify({events:o.events||[],series:o.series||[]}),
-  memos:JSON.stringify(o.memos||[]),
-  prefs:JSON.stringify({set:o.set||{},cl:o.cl||[]})
-});
-const ref=n=>doc(db,'users',uid,'data',n);
-
-/* ---- 保存のたびに、少し待ってからクラウドへ送る ---- */
-Storage.prototype.setItem=function(k){_set.apply(this,arguments);if(k===KEY)schedule()};
-function schedule(){if(!ready||!uid)return;clearTimeout(timer);timer=setTimeout(push,1200);st('同期中…')}
-async function push(){
-  timer=null;if(!ready||!uid)return;
-  const p=partsOf(readLocal());
-  try{
-    for(const n of PARTS){
-      if(remote[n]!==undefined||p[n]===last[n])continue;
-      const old=last[n];last[n]=p[n];
-      try{await setDoc(ref(n),{json:p[n],t:serverTimestamp()})}catch(e){last[n]=old;throw e}
-    }
-    st('同期済み '+new Date().toTimeString().slice(0,5));
-  }catch(e){st('未同期(通信を確認)',true)}
-}
-window.addEventListener('online',()=>{if(ready)push()});
-
-/* ---- 他の端末の変更を受け取る ---- */
-function onSnap(n,snap){
-  if(snap.metadata.hasPendingWrites)return;
-  seen[n]=1;
-  if(!snap.exists()){last[n]=null}
-  else{
-    const j=snap.data().json;
-    if(j!==last[n]){
-      last[n]=j;
-      if(j!==partsOf(readLocal())[n]){remote[n]=j;clearTimeout(applyT);applyT=setTimeout(applyRemote,400)}
-    }
-  }
-  if(!ready&&PARTS.every(x=>seen[x])){ready=true;push()}
-}
-function applyRemote(){
-  if(!Object.keys(remote).length)return;
-  const a=document.activeElement;
-  const editing=a&&(/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)||a.isContentEditable);
-  if(editing||document.querySelector('.ov.on')){applyT=setTimeout(applyRemote,2500);return}
-  if(!localStorage.getItem(BK)&&localStorage.getItem(KEY))_set.call(localStorage,BK,localStorage.getItem(KEY));
-  const o=readLocal();
-  if(remote.todos!==undefined)o.todos=JSON.parse(remote.todos);
-  if(remote.events!==undefined){const e=JSON.parse(remote.events);o.events=e.events;o.series=e.series}
-  if(remote.memos!==undefined)o.memos=JSON.parse(remote.memos);
-  if(remote.prefs!==undefined){const p=JSON.parse(remote.prefs);o.set=p.set;o.cl=p.cl}
-  _set.call(localStorage,KEY,JSON.stringify(o));
-  location.reload();
-}
-
-/* ---- ログイン状態 ---- */
-onAuthStateChanged(auth,u=>{
-  unsubs.forEach(f=>f());unsubs=[];seen={};last={};remote={};ready=false;
-  if(!u){uid=null;ov.style.display='flex';chip.style.display='none';return}
-  uid=u.uid;ov.style.display='none';chip.style.display='inline-flex';st('接続中…');
-  PARTS.forEach(n=>unsubs.push(onSnapshot(ref(n),s=>onSnap(n,s),e=>st('接続エラー('+(e.code||'')+')',true))));
-});
-</script>
-<!-- ===== Firebase 同期ブロック(ここまで) ===== -->
 </body>
 </html>
